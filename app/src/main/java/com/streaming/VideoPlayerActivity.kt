@@ -8,6 +8,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import android.view.KeyEvent
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -183,5 +184,35 @@ class VideoPlayerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         player?.release()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                player?.let {
+                    if (it.isPlaying) it.pause() else it.play()
+                }
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                player?.let {
+                    if (it.isPlaying) it.pause() else it.play()
+                }
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                player?.seekBack()
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                player?.seekForward()
+                true
+            }
+            KeyEvent.KEYCODE_BACK -> {
+                finish()
+                true
+            }
+            else -> super.onKeyDown(keyCode, event)
+        }
     }
 }

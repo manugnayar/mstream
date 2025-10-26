@@ -23,7 +23,11 @@
             android:textSize="24sp"
             android:layout_marginEnd="16dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:padding="8dp"
+            android:background="@drawable/menu_button_selector"
+            android:nextFocusDown="@id/movies_recycler_view" />
 
         <TextView
             android:layout_width="0dp"
@@ -43,7 +47,11 @@
             android:textSize="14sp"
             android:layout_marginEnd="24dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:padding="8dp"
+            android:background="@drawable/menu_button_selector"
+            android:nextFocusDown="@id/movies_recycler_view" />
 
         <TextView
             android:id="@+id/search_button"
@@ -53,7 +61,11 @@
             android:textColor="#ffffff"
             android:textSize="14sp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:padding="8dp"
+            android:background="@drawable/menu_button_selector"
+            android:nextFocusDown="@id/movies_recycler_view" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

@@ -32,7 +32,8 @@
                 android:layout_margin="8dp"
                 android:background="#80000000"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:focusableInTouchMode="false" />
         </FrameLayout>
 
         <LinearLayout
@@ -66,7 +67,9 @@
                     android:backgroundTint="#ffffff"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_marginEnd="8dp"
+                    android:focusable="true"
+                    android:focusableInTouchMode="false" />
             </LinearLayout>
 
             <TextView
@@ -93,7 +96,9 @@
                 android:textSize="14sp"
                 android:layout_marginTop="12dp"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:padding="8dp" />
 
             <TextView
                 android:id="@+id/detail_cast"

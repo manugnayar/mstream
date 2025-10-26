@@ -15,6 +15,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.content.Context
 import androidx.appcompat.app.AlertDialog
+import android.view.KeyEvent
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,7 +35,8 @@ class MainActivity : AppCompatActivity() {
         webScraper = WebScraper(baseHost)
 
         val recyclerView = findViewById<RecyclerView>(R.id.movies_recycler_view)
-        val gridLayoutManager = androidx.recyclerview.widget.GridLayoutManager(this, 3)
+        val spanCount = if (packageManager.hasSystemFeature("android.software.leanback")) 6 else 3
+        val gridLayoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
         recyclerView.layoutManager = gridLayoutManager
 
         movieAdapter = MovieAdapter(emptyList()) { movie ->
@@ -68,6 +70,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         loadMovies(currentLanguage)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> true
+            else -> super.onKeyDown(keyCode, event)
+        }
     }
 
     private fun showLanguageDialog() {
@@ -176,6 +185,15 @@ class MainActivity : AppCompatActivity() {
             .create()
 
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        
+        dialog.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                dialog.dismiss()
+                true
+            } else {
+                false
+            }
+        }
 
         dialogView.findViewById<TextView>(R.id.detail_title).text = movie.title
         dialogView.findViewById<TextView>(R.id.detail_year).text = "${movie.year} | ${movie.language}"
@@ -226,6 +244,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        dialogView.findViewById<Button>(R.id.detail_play_button).requestFocus()
     }
 
     private fun fetchAndShowFullDetails(movie: Movie) {

@@ -29,12 +29,26 @@ class MovieAdapter(private var movies: List<Movie>, private val onMovieClick: (M
         val movie = movies[position]
         holder.title.text = movie.title
         
-        // Load thumbnail
         loadThumbnail(movie.thumbnailUrl, holder.thumbnail)
         
-        // Set click listener
         holder.itemView.setOnClickListener {
             onMovieClick(movie)
+        }
+        
+        holder.itemView.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                val rect = android.graphics.Rect()
+                view.getLocalVisibleRect(rect)
+                view.parent.requestChildRectangleOnScreen(view, rect, false)
+            }
+        }
+        
+        if (position < 6) {
+            holder.itemView.nextFocusUpId = when (position % 6) {
+                0 -> R.id.menu_button
+                in 1..3 -> R.id.genres_button
+                else -> R.id.search_button
+            }
         }
     }
 
