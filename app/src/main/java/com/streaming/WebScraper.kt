@@ -71,12 +71,12 @@ class WebScraper(private val baseHost: String = "https://www.5movierulz.clothing
     }
     
     private fun cleanTitle(title: String): String {
-        return title
-            .replace(Regex("\\(\\d{4}\\).*"), "")
-            .replace(Regex("HDRip.*", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("Malayalam.*", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("Full Movie.*", RegexOption.IGNORE_CASE), "")
-            .trim()
+        val yearMatch = Regex("(.*?)\\((\\d{4})\\)").find(title)
+        return if (yearMatch != null) {
+            "${yearMatch.groupValues[1].trim()} (${yearMatch.groupValues[2]})"
+        } else {
+            title.split(Regex("HDRip|DVDRip|BRRip|WEB-DL|Full Movie|Watch Online", RegexOption.IGNORE_CASE))[0].trim()
+        }
     }
 
     suspend fun searchMovies(query: String): List<Movie> = withContext(Dispatchers.IO) {
@@ -93,5 +93,55 @@ class WebScraper(private val baseHost: String = "https://www.5movierulz.clothing
             e.printStackTrace()
             emptyList()
         }
+    }
+
+    suspend fun fetchMovieDetails(movieUrl: String): Map<String, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL(movieUrl)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            
+            val html = BufferedReader(InputStreamReader(connection.inputStream)).use { it.readText() }
+            parseMovieDetails(html)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyMap()
+        }
+    }
+
+    private fun parseMovieDetails(html: String): Map<String, String> {
+        val details = mutableMapOf<String, String>()
+        
+        Pattern.compile("Directed by:\\s*([^<]+)").matcher(html).apply {
+            if (find()) details["director"] = group(1)?.trim() ?: ""
+        }
+        
+        Pattern.compile("Starring by:\\s*([^<]+)").matcher(html).apply {
+            if (find()) details["cast"] = group(1)?.trim() ?: ""
+        }
+        
+        Pattern.compile("Genres:\\s*([^<]+)").matcher(html).apply {
+            if (find()) details["genres"] = group(1)?.trim() ?: ""
+        }
+        
+        Pattern.compile("Language:\\s*([^<]+)").matcher(html).apply {
+            if (find()) details["language"] = group(1)?.trim() ?: ""
+        }
+        
+        Pattern.compile("Country:\\s*([^<]+)").matcher(html).apply {
+            if (find()) details["country"] = group(1)?.trim() ?: ""
+        }
+        
+        Pattern.compile("<p>([^<]{100,}?)</p>", Pattern.DOTALL).matcher(html).apply {
+            if (find()) {
+                val desc = group(1)?.trim() ?: ""
+                if (desc.length > 50 && !desc.contains("Torrent") && !desc.contains("Watch Online")) {
+                    details["description"] = desc
+                }
+            }
+        }
+        
+        return details
     }
 }

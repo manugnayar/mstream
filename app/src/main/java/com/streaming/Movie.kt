@@ -6,5 +6,10 @@ data class Movie(
     val thumbnailUrl: String,
     val description: String = "",
     val year: String = "",
-    val movieUrl: String = ""
+    val movieUrl: String = "",
+    val genres: String = "",
+    val cast: String = "",
+    val director: String = "",
+    val language: String = "",
+    val country: String = ""
 )

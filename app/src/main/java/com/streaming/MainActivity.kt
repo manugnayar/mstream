@@ -11,6 +11,8 @@ import kotlinx.coroutines.withContext
 import android.content.Intent
 import android.widget.TextView
 import android.widget.EditText
+import android.widget.Button
+import android.widget.ImageView
 import android.content.Context
 import androidx.appcompat.app.AlertDialog
 
@@ -36,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = gridLayoutManager
 
         movieAdapter = MovieAdapter(emptyList()) { movie ->
-            openVideoPlayer(movie)
+            showMovieDetailsDialog(movie)
         }
         recyclerView.adapter = movieAdapter
 
@@ -164,6 +166,103 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showMovieDetailsDialog(movie: Movie) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_movie_details, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.detail_title).text = movie.title
+        dialogView.findViewById<TextView>(R.id.detail_year).text = "${movie.year} | ${movie.language}"
+        
+        if (movie.genres.isNotEmpty()) {
+            dialogView.findViewById<TextView>(R.id.detail_genres).text = movie.genres
+        }
+        
+        if (movie.description.isNotEmpty()) {
+            dialogView.findViewById<TextView>(R.id.detail_description).text = movie.description
+        } else {
+            dialogView.findViewById<TextView>(R.id.detail_description).text = "Click to view full details"
+        }
+        
+        if (movie.cast.isNotEmpty()) {
+            dialogView.findViewById<TextView>(R.id.detail_cast).text = "Cast: ${movie.cast}"
+        }
+        
+        if (movie.director.isNotEmpty()) {
+            dialogView.findViewById<TextView>(R.id.detail_director).text = "Director: ${movie.director}"
+        }
+        
+        val backdrop = dialogView.findViewById<ImageView>(R.id.detail_backdrop)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val bitmap = android.graphics.BitmapFactory.decodeStream(
+                    java.net.URL(movie.thumbnailUrl).openConnection().getInputStream()
+                )
+                withContext(Dispatchers.Main) {
+                    backdrop.setImageBitmap(bitmap)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        dialogView.findViewById<TextView>(R.id.detail_close).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.detail_play_button).setOnClickListener {
+            dialog.dismiss()
+            openVideoPlayer(movie)
+        }
+
+        dialogView.findViewById<TextView>(R.id.detail_description).setOnClickListener {
+            fetchAndShowFullDetails(movie)
+        }
+
+        dialog.show()
+    }
+
+    private fun fetchAndShowFullDetails(movie: Movie) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val details = webScraper.fetchMovieDetails(movie.movieUrl)
+                withContext(Dispatchers.Main) {
+                    showFullDetails(movie, details)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    showFullDetails(movie, null)
+                }
+            }
+        }
+    }
+
+    private fun showFullDetails(movie: Movie, details: Map<String, String>?) {
+        val message = buildString {
+            append("Title: ${movie.title}\n")
+            append("Year: ${movie.year}\n")
+            if (details != null) {
+                details["director"]?.let { append("Director: $it\n") }
+                details["cast"]?.let { append("Cast: $it\n") }
+                details["genres"]?.let { append("Genres: $it\n") }
+                details["language"]?.let { append("Language: $it\n") }
+                details["country"]?.let { append("Country: $it\n") }
+                details["description"]?.let { append("\nPlot:\n$it") }
+            } else {
+                append("\nDescription: ${movie.description}")
+            }
+        }
+        AlertDialog.Builder(this)
+            .setTitle(movie.title)
+            .setMessage(message)
+            .setPositiveButton("Close", null)
             .show()
     }
 
