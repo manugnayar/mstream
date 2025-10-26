@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>5movierulz Debug Monitor</title>
+</head>
+<body>
+    <h1>Debug Monitor for 5movierulz</h1>
+    <button onclick="analyzeMoviePage()">Analyze Movie Page</button>
+    <div id="results"></div>
+
+    <script>
+        async function analyzeMoviePage() {
+            const url = 'https://www.5movierulz.clothing/kishkindhapuri-2025-hdrip-malayalam-original-version-full-movie-watch-online-free/';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+                
+                const html = await response.text();
+                console.log('HTML Length:', html.length);
+                
+                // Extract JavaScript locations array
+                const locationsMatch = html.match(/var locations = \["([^"]+)"\]/);
+                if (locationsMatch) {
+                    console.log('Found locations:', locationsMatch[1]);
+                    document.getElementById('results').innerHTML += '<p>Locations: ' + locationsMatch[1] + '</p>';
+                }
+                
+                // Extract iframe sources
+                const iframeMatches = html.match(/<iframe[^>]*src="([^"]*)"[^>]*>/g);
+                if (iframeMatches) {
+                    iframeMatches.forEach(iframe => {
+                        console.log('Found iframe:', iframe);
+                        document.getElementById('results').innerHTML += '<p>Iframe: ' + iframe + '</p>';
+                    });
+                }
+                
+                // Extract vcdnlare links
+                const vcdnlareMatches = html.match(/https:\/\/[^"'\s]*vcdnlare\.com[^"'\s]*/g);
+                if (vcdnlareMatches) {
+                    vcdnlareMatches.forEach(link => {
+                        console.log('Found vcdnlare link:', link);
+                        document.getElementById('results').innerHTML += '<p>Vcdnlare: ' + link + '</p>';
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results').innerHTML += '<p>Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>
