@@ -17,8 +17,7 @@ class MovieAdapter(private var movies: List<Movie>, private val onMovieClick: (M
 
     class MovieViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val title: TextView = view.findViewById(R.id.movie_title)
-        val year: TextView = view.findViewById(R.id.movie_year)
-        val thumbnail: ImageView = view.findViewById(R.id.movie_thumbnail)
+        val thumbnail: ImageView = view.findViewById(R.id.movie_poster)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
@@ -29,7 +28,6 @@ class MovieAdapter(private var movies: List<Movie>, private val onMovieClick: (M
     override fun onBindViewHolder(holder: MovieViewHolder, position: Int) {
         val movie = movies[position]
         holder.title.text = movie.title
-        holder.year.text = movie.year
         
         // Load thumbnail
         loadThumbnail(movie.thumbnailUrl, holder.thumbnail)
@@ -56,6 +54,12 @@ class MovieAdapter(private var movies: List<Movie>, private val onMovieClick: (M
     fun updateMovies(newMovies: List<Movie>) {
         movies = newMovies
         notifyDataSetChanged()
+    }
+
+    fun addMovies(newMovies: List<Movie>) {
+        val oldSize = movies.size
+        movies = movies + newMovies
+        notifyItemRangeInserted(oldSize, newMovies.size)
     }
 
     override fun getItemCount() = movies.size
