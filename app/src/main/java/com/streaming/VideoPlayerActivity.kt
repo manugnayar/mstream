@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import android.view.KeyEvent
+import android.content.pm.ActivityInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -27,9 +28,14 @@ class VideoPlayerActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var progressText: TextView
     private var hasStartedPlayback = false
+    private var torrentEngine: TorrentStreamEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        if (!packageManager.hasSystemFeature("android.software.leanback")) {
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
         
         supportActionBar?.hide()
         
@@ -99,76 +105,40 @@ class VideoPlayerActivity : AppCompatActivity() {
     private fun startTorrentStream(magnetLink: String) {
         Log.d("VideoPlayer", "Starting stream with magnet: ${magnetLink.take(100)}...")
         
-        val torrentOptions = TorrentOptions.Builder()
-            .saveLocation(File(filesDir, "torrents"))
-            .removeFilesAfterStop(false)
-            .build()
-            
-        val torrentStream = TorrentStream.init(torrentOptions)
-        Log.d("VideoPlayer", "TorrentStream initialized")
+        val saveDir = File(filesDir, "torrents")
+        saveDir.mkdirs()
         
-        torrentStream.addListener(object : TorrentListener {
-            override fun onStreamReady(torrent: com.github.se_bastiaan.torrentstream.Torrent) {
-                Log.d("VideoPlayer", "Stream ready")
+        torrentEngine = TorrentStreamEngine(saveDir)
+        torrentEngine?.start(magnetLink, object : TorrentStreamEngine.StreamListener {
+            override fun onMetadataReceived(videoFile: File) {
+                Log.d("VideoPlayer", "Metadata received")
+            }
+            
+            override fun onProgress(progress: Float, downloadRate: Int) {
+                runOnUiThread {
+                    progressBar.progress = progress.toInt()
+                    progressText.text = "Downloading: ${String.format("%.1f", progress)}%"
+                }
+            }
+            
+            override fun onReady(httpUrl: String) {
                 if (!hasStartedPlayback) {
                     hasStartedPlayback = true
                     runOnUiThread {
                         progressBar.visibility = View.GONE
                         progressText.visibility = View.GONE
-                        val videoFile = torrent.videoFile
-                        if (videoFile != null && videoFile.exists()) {
-                            initializePlayer("file://" + videoFile.absolutePath)
-                        }
+                        initializePlayer(httpUrl)
                     }
                 }
             }
             
-            override fun onStreamProgress(torrent: com.github.se_bastiaan.torrentstream.Torrent, status: com.github.se_bastiaan.torrentstream.StreamStatus) {
+            override fun onError(error: String) {
+                Log.e("VideoPlayer", "Torrent error: $error")
                 runOnUiThread {
-                    progressBar.progress = status.progress.toInt()
-                    progressText.text = "Downloading: ${String.format("%.2f", status.progress)}%"
-                }
-                
-                if (!hasStartedPlayback && status.progress >= 2.0f) {
-                    hasStartedPlayback = true
-                    runOnUiThread {
-                        progressBar.visibility = View.GONE
-                        progressText.visibility = View.GONE
-                        val videoFile = torrent.videoFile
-                        if (videoFile != null && videoFile.exists()) {
-                            initializePlayer("file://" + videoFile.absolutePath)
-                        }
-                    }
-                }
-            }
-            
-            override fun onStreamStopped() {
-                Log.d("VideoPlayer", "Stream stopped")
-            }
-            
-            override fun onStreamPrepared(torrent: com.github.se_bastiaan.torrentstream.Torrent) {
-                Log.d("VideoPlayer", "Stream prepared")
-                runOnUiThread {
-                    progressText.text = "Torrent prepared"
-                }
-            }
-            
-            override fun onStreamStarted(torrent: com.github.se_bastiaan.torrentstream.Torrent) {
-                Log.d("VideoPlayer", "Stream started")
-                runOnUiThread {
-                    progressText.text = "Downloading..."
-                }
-            }
-            
-            override fun onStreamError(torrent: com.github.se_bastiaan.torrentstream.Torrent?, ex: Exception) {
-                Log.e("VideoPlayer", "Stream error", ex)
-                runOnUiThread {
-                    progressText.text = "Error: ${ex.message}"
+                    progressText.text = "Error: $error"
                 }
             }
         })
-        
-        torrentStream.startStream(magnetLink)
     }
     
     private fun initializePlayer(streamUrl: String) {
@@ -184,6 +154,13 @@ class VideoPlayerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         player?.release()
+        torrentEngine?.stop()
+        cleanupOldTorrents()
+    }
+    
+    private fun cleanupOldTorrents() {
+        val saveDir = File(filesDir, "torrents")
+        saveDir.listFiles()?.forEach { it.deleteRecursively() }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
